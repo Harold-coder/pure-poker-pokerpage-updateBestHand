@@ -29,7 +29,7 @@ exports.handler = (event, context, callback) => {
         }
 
         // First, check if the player exists
-        const playerExistsQuery = 'SELECT COUNT(*) AS playerExists FROM users WHERE id = ?';
+        const playerExistsQuery = 'SELECT COUNT(*) AS playerExists FROM users WHERE username = ?';
         connection.query(playerExistsQuery, [playerId], (err, playerExistsResults) => {
             if (err || playerExistsResults[0].playerExists === 0) {
                 connection.end();
@@ -41,7 +41,7 @@ exports.handler = (event, context, callback) => {
             }
 
             // Fetch the current best hand if the player exists
-            const query = 'SELECT best_hand FROM users WHERE id = ?';
+            const query = 'SELECT best_hand FROM users WHERE username = ?';
             connection.query(query, [playerId], (err, results) => {
                 if (err || results.length === 0) {
                     connection.end();
@@ -57,7 +57,7 @@ exports.handler = (event, context, callback) => {
                 const currentHandValue = Helper.evaluateHand(currentBestHand).value;
 
                 if (newHandValue > currentHandValue) {
-                    const updateQuery = 'UPDATE users SET best_hand = ?, best_hand_date = ? WHERE id = ?';
+                    const updateQuery = 'UPDATE users SET best_hand = ?, best_hand_date = ? WHERE username = ?';
                     connection.query(updateQuery, [JSON.stringify(newBestHand), new Date(date), playerId], (err, updateResults) => {
                         connection.end();
 

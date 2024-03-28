@@ -87,7 +87,7 @@ exports.handler = (event, context, callback) => {
                     connection.end();
                     callback(null, {
                         statusCode: 200,
-                        body: JSON.stringify({ message: 'No update required.', value: newHandValue, oldValue: currentHandValue }),
+                        body: JSON.stringify({ message: 'No update required.', value: newHandValue, newHand: newBestHand, oldValue: currentHandValue, oldHand: currentBestHand }),
                         headers: headerTemplate
                     });
                 }

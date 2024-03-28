@@ -2,7 +2,7 @@ const mysql = require('mysql');
 const Helper = require('HandEvaluator');
 
 exports.handler = (event, context, callback) => {
-    const { playerId, newBestHand, date } = event;
+    const { playerId, newBestHand, date } = JSON.parse(event.body);
     const requestOrigin = event.headers ? event.headers.origin : "*";
 
     const headerTemplate = {

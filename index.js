@@ -52,6 +52,7 @@ exports.handler = (event, context, callback) => {
                     });
                 }
 
+                console.log('Current best hand from DB:', results[0].best_hand);
                 const currentBestHand = JSON.parse(results[0].best_hand);
                 const newHandValue = Helper.evaluateHand(newBestHand).value;
                 const currentHandValue = Helper.evaluateHand(currentBestHand).value;

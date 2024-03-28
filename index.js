@@ -57,6 +57,8 @@ exports.handler = (event, context, callback) => {
                 // Convert the string to an array by splitting on commas, then trim spaces and wrap each card in quotes to simulate a JSON array
                 const currentBestHand = currentBestHandString.split(',').map(card => card.trim());
 
+                console.log(currentBestHand);
+
                 const newHandValue = Helper.evaluateHand(newBestHand).value;
                 const currentHandValue = Helper.evaluateHand(currentBestHand).value;
 
@@ -85,7 +87,7 @@ exports.handler = (event, context, callback) => {
                     connection.end();
                     callback(null, {
                         statusCode: 200,
-                        body: JSON.stringify({ message: 'No update required.' }),
+                        body: JSON.stringify({ message: 'No update required.', value: newHandValue }),
                         headers: headerTemplate
                     });
                 }

@@ -1,10 +1,9 @@
 const mysql = require('mysql');
 const Helper = require('HandEvaluator');
 
-exports.handler = async (event) => {
-    // Parse the input event for relevant data
-    const { playerId, newBestHand, date, currentBestHand } = event;
-    const requestOrigin = event.headers.origin;
+exports.handler = (event, context, callback) => {
+    const { playerId, newBestHand, date } = event;
+    const requestOrigin = event.headers ? event.headers.origin : "*";
 
     const headerTemplate = {
         "Access-Control-Allow-Origin": requestOrigin,
@@ -12,7 +11,6 @@ exports.handler = async (event) => {
         "Access-Control-Allow-Methods": "OPTIONS,GET"
     };
 
-    // Set up the database connection
     const connection = mysql.createConnection({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
@@ -20,7 +18,6 @@ exports.handler = async (event) => {
         database: process.env.DB_NAME
     });
 
-    // Connect to the database
     connection.connect(err => {
         if (err) {
             console.error('Database connection failed:', err);
@@ -31,37 +28,63 @@ exports.handler = async (event) => {
             });
         }
 
-        const newHandValue = Helper.evaluateHand(newBestHand).value;
-        const currentHandValue = Helper.evaluateHand(currentBestHand).value;
-
-        if (newHandValue > currentHandValue) {
-            const updateQuery = 'UPDATE users SET best_hand = ?, best_hand_date = ? WHERE id = ?';
-
-            connection.query(updateQuery, [JSON.stringify(newBestHand), new Date(date), playerId], (err, results) => {
+        // First, check if the player exists
+        const playerExistsQuery = 'SELECT COUNT(*) AS playerExists FROM users WHERE id = ?';
+        connection.query(playerExistsQuery, [playerId], (err, playerExistsResults) => {
+            if (err || playerExistsResults[0].playerExists === 0) {
                 connection.end();
+                return callback(null, {
+                    statusCode: 404,
+                    body: JSON.stringify({ message: 'Player not found' }),
+                    headers: headerTemplate
+                });
+            }
 
-                if (err) {
-                    console.error('Query execution failed:', err);
+            // Fetch the current best hand if the player exists
+            const query = 'SELECT best_hand FROM users WHERE id = ?';
+            connection.query(query, [playerId], (err, results) => {
+                if (err || results.length === 0) {
+                    connection.end();
                     return callback(null, {
                         statusCode: 500,
-                        body: JSON.stringify({ message: 'Query execution failed' }),
+                        body: JSON.stringify({ message: 'Failed to fetch current best hand' }),
                         headers: headerTemplate
                     });
                 }
 
-                callback(null, {
-                    statusCode: 200,
-                    body: JSON.stringify({ message: 'Best hand updated successfully.' }),
-                    headers: headerTemplate
-                });
+                const currentBestHand = JSON.parse(results[0].best_hand);
+                const newHandValue = Helper.evaluateHand(newBestHand).value;
+                const currentHandValue = Helper.evaluateHand(currentBestHand).value;
+
+                if (newHandValue > currentHandValue) {
+                    const updateQuery = 'UPDATE users SET best_hand = ?, best_hand_date = ? WHERE id = ?';
+                    connection.query(updateQuery, [JSON.stringify(newBestHand), new Date(date), playerId], (err, updateResults) => {
+                        connection.end();
+
+                        if (err) {
+                            console.error('Query execution failed:', err);
+                            return callback(null, {
+                                statusCode: 500,
+                                body: JSON.stringify({ message: 'Query execution failed' }),
+                                headers: headerTemplate
+                            });
+                        }
+
+                        callback(null, {
+                            statusCode: 200,
+                            body: JSON.stringify({ message: 'Best hand updated successfully.' }),
+                            headers: headerTemplate
+                        });
+                    });
+                } else {
+                    connection.end();
+                    callback(null, {
+                        statusCode: 200,
+                        body: JSON.stringify({ message: 'No update required.' }),
+                        headers: headerTemplate
+                    });
+                }
             });
-        } else {
-            connection.end();
-            callback(null, {
-                statusCode: 200,
-                body: JSON.stringify({ message: 'No update required.' }),
-                headers: headerTemplate
-            });
-        }
+        });
     });
 };

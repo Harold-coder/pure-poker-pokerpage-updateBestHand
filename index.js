@@ -52,14 +52,18 @@ exports.handler = (event, context, callback) => {
                     });
                 }
 
-                console.log('Current best hand from DB:', results[0].best_hand);
-                const currentBestHand = JSON.parse(results[0].best_hand);
+                // Assuming best_hand is stored as a comma-separated string and not JSON
+                const currentBestHandString = results[0].best_hand;
+                // Convert the string to an array by splitting on commas, then trim spaces and wrap each card in quotes to simulate a JSON array
+                const currentBestHand = currentBestHandString.split(',').map(card => card.trim());
+
                 const newHandValue = Helper.evaluateHand(newBestHand).value;
                 const currentHandValue = Helper.evaluateHand(currentBestHand).value;
 
                 if (newHandValue > currentHandValue) {
                     const updateQuery = 'UPDATE users SET best_hand = ?, best_hand_date = ? WHERE username = ?';
-                    connection.query(updateQuery, [JSON.stringify(newBestHand), new Date(date), playerId], (err, updateResults) => {
+                    const newBestHandString = newBestHand.join(','); // Convert array to comma-separated string
+                    connection.query(updateQuery, [newBestHandString, new Date(date), playerId], (err, updateResults) => {
                         connection.end();
 
                         if (err) {

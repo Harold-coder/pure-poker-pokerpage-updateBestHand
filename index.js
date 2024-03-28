@@ -35,7 +35,7 @@ exports.handler = (event, context, callback) => {
                 connection.end();
                 return callback(null, {
                     statusCode: 404,
-                    body: JSON.stringify({ message: 'Player not found' }),
+                    body: JSON.stringify({ message: `Player not found or query failed. Searched for playerId: '${playerId}'` }),
                     headers: headerTemplate
                 });
             }
